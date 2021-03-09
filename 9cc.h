@@ -9,6 +9,7 @@ typedef struct Token Token;  // 別名をつけることで,以降structが不�
 typedef struct Node Node;  // structの省略
 typedef enum {
     TK_RESERVED,  //記号
+    TK_IDENT,     //識別子
     TK_NUM,       //整数トークン
     TK_EOF,       //入力の終わりを示すトークン
 } TokenKind;
@@ -19,6 +20,7 @@ struct Token {
     Token *next;  //次のトークン
     int val;      // kindがTK_NUMの場合，その数値
     char *str;    //トークン文字列
+    int len;      //トークンの長さ
 };
 
 typedef enum {
@@ -26,6 +28,10 @@ typedef enum {
     ND_SUB,  // -
     ND_MUL,  // *
     ND_DIV,  // /
+    ND_EQ,   // ==
+    ND_NE,   // !=
+    ND_LT,   // <
+    ND_LE,   // <=
     ND_NUM,  //　整数
 } NodeKind;
 
@@ -49,8 +55,8 @@ Node *expr();
 // tokenize.c
 void error_at(char *loc, char *fmt, ...);
 void error(char *fmt, ...);
-bool consume(char op);
-void expect(char op);
+bool consume(char *op);
+void expect(char *op);
 int expect_number();
 bool at_eof();
 Token *tokenize(char *p);

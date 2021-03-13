@@ -23,6 +23,26 @@ void gen(Node *node) {
             printf("    cqo\n");
             printf("    idiv rdi\n");
             break;
+        case ND_EQ:
+            printf("    cmp rax, rdi\n");  // raxとrdiを比較
+            printf("    sete al\n");       // 値が同じならalに1が入る
+            printf("    movzb rax, al\n");
+            break;
+        case ND_NE:
+            printf("    cmp rax, rdi\n");  // raxとrdiを比較
+            printf("    setne al\n");
+            printf("    movzb rax, al\n");
+            break;
+        case ND_LT:
+            printf("    cmp rax, rdi\n");
+            printf("    setl al\n");
+            printf("    movzb rax, al\n");
+            break;
+        case ND_LE:
+            printf("    cmp rax, rdi\n");
+            printf("    setle al\n");
+            printf("    movzb rax, al\n");
+            break;
     }
     printf("    push rax\n");
 }

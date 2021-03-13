@@ -1,4 +1,5 @@
 #include "9cc.h"
+
 char *user_input;  //入力の先頭
 Token *token;
 
@@ -27,16 +28,22 @@ void error(char *fmt, ...) {
 }
 //次のトークンが期待している記号のときはトークンを一つ読み進めて
 //真を返す
-bool consume(char op) {
-    if (token->kind != TK_RESERVED || token->str[0] != op) return false;
+bool consume(char *op) {
+    if (token->kind != TK_RESERVED ||
+        strlen(op) !=
+            token->len ||  //次のトークンが期待している記号の長さでない時
+        memcmp(token->str, op, token->len)) {  // 長さが同じでも違う記号の時
+        return false;
+    }
     token = token->next;
     return true;
 }
 // 次のトークンが期待している記号のときはトークンを一つ読み進めて
 //それ以外はエラーを返す
-void expect(char op) {
-    if (token->kind != TK_RESERVED || token->str[0] != op)
-        error_at(token->str, "'%c'ではありません", op);
+void expect(char *op) {
+    if (token->kind != TK_RESERVED || strlen(op) != token->len ||
+        memcmp(token->str, op, token->len))
+        error_at(token->str, "'%s'ではありません", op);
     token = token->next;
 }
 
@@ -52,13 +59,16 @@ int expect_number() {
 bool at_eof() { return token->kind == TK_EOF; }
 
 //新しいトークンを作成してcurにつなげる
-Token *new_token(TokenKind kind, Token *cur, char *str) {
+Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
     Token *tok = calloc(1, sizeof(Token));
     tok->kind = kind;
     tok->str = str;
+    tok->len = len;
     cur->next = tok;
     return tok;
 }
+
+bool startswith(char *p, char *q) { return memcmp(p, q, strlen(q)) == 0; }
 
 // 入力文字pをトークナイズしてそれを返す
 Token *tokenize(char *p) {
@@ -73,19 +83,32 @@ Token *tokenize(char *p) {
             continue;
         }
 
-        if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' ||
-            *p == ')') {
-            cur = new_token(TK_RESERVED, cur, p++);
+        if (startswith(p, "==") || startswith(p, "!=") || startswith(p, "<=") ||
+            startswith(p, ">=")) {
+            cur = new_token(TK_RESERVED, cur, p, 2);
+            p += 2;
+            continue;
+        }
+
+        if (strchr("+-*/()<>", *p)) {
+            cur = new_token(TK_RESERVED, cur, p++, 1);
             continue;
         }
 
         if (isdigit(*p)) {  //整数のとき
-            cur = new_token(TK_NUM, cur, p);
+            cur = new_token(TK_NUM, cur, p, 0);
             cur->val = strtol(p, &p, 10);
+            char *q = p;
+            cur->len = p - q;
+            continue;
+        }
+        if ('a' <= *p && *p <= 'z') {
+            cur = new_token(TK_IDENT, cur, p++, 1);
+            cur->len = 1;
             continue;
         }
         error("トークナイズできません");
     }
-    new_token(TK_EOF, cur, p);
+    new_token(TK_EOF, cur, p, 0);
     return head.next;
 }

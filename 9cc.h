@@ -24,22 +24,27 @@ struct Token {
 };
 
 typedef enum {
-    ND_ADD,  // +
-    ND_SUB,  // -
-    ND_MUL,  // *
-    ND_DIV,  // /
-    ND_EQ,   // ==
-    ND_NE,   // !=
-    ND_LT,   // <
-    ND_LE,   // <=
-    ND_NUM,  //　整数
+    ND_ADD,     // +
+    ND_SUB,     // -
+    ND_MUL,     // *
+    ND_DIV,     // /
+    ND_EQ,      // ==
+    ND_NE,      // !=
+    ND_LT,      // <
+    ND_LE,      // <=
+    ND_NUM,     //　整数
+    ND_LVAR,    //ローカル変数
+    ND_ASSIGN,  //　=
 } NodeKind;
+
+extern Node *code[100];
 
 struct Node {
     NodeKind kind;  //ノードの型
     Node *lhs;      //左辺
     Node *rhs;      //右辺
-    int val;
+    int val;        // kindaが数値のとき
+    int offset;     // kindがND_LVARの場合のみ使う
 };
 
 extern char *user_input;  //入力の先頭
@@ -51,6 +56,7 @@ Node *new_node_num(int val);
 Node *primary();
 Node *mul();
 Node *expr();
+void program();
 
 // tokenize.c
 void error_at(char *loc, char *fmt, ...);
@@ -60,6 +66,8 @@ void expect(char *op);
 int expect_number();
 bool at_eof();
 Token *tokenize(char *p);
+Token *consume_ident();
 
 // codegen.c
 void gen(Node *node);
+void gen_lval(Node *node);

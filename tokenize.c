@@ -46,6 +46,12 @@ void expect(char *op) {
         error_at(token->str, "'%s'ではありません", op);
     token = token->next;
 }
+Token *consume_ident() {
+    if (token->kind != TK_IDENT) return NULL;
+    Token *t = token;
+    token = token->next;  //一つすすめる
+    return t;
+}
 
 //次のトークンが数値の場合，トークンを一つ読み進めてその数値を返す
 //それ以外はエラーを返す
@@ -90,7 +96,7 @@ Token *tokenize(char *p) {
             continue;
         }
 
-        if (strchr("+-*/()<>", *p)) {
+        if (strchr(";+-*/()<>=", *p)) {
             cur = new_token(TK_RESERVED, cur, p++, 1);
             continue;
         }
@@ -102,7 +108,7 @@ Token *tokenize(char *p) {
             cur->len = p - q;
             continue;
         }
-        if ('a' <= *p && *p <= 'z') {
+        if ('a' <= *p && *p <= 'z') {  //識別子
             cur = new_token(TK_IDENT, cur, p++, 1);
             cur->len = 1;
             continue;

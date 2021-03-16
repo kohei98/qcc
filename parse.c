@@ -1,5 +1,6 @@
 #include "9cc.h"
 Node *code[100];
+LVar *locals;
 
 Node *stmt();
 Node *assign();
@@ -10,6 +11,7 @@ Node *unary();
 Node *equality();
 Node *relational();
 Node *add();
+LVar *find_lvar(Token *tok);
 
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
     Node *node = calloc(1, sizeof(Node));
@@ -42,8 +44,15 @@ Node *assign() {
 Node *expr() { return assign(); }
 
 // stmt = expr ";"
+//      | "return" expr ";"
 Node *stmt() {
-    Node *node = expr();
+    Node *node;
+    if (consume_tktype(TK_RETURN)) {
+        node = calloc(1, sizeof(Node));
+        node->kind = ND_RETURN;
+        node->lhs = expr();
+    } else
+        node = expr();
     expect(";");
     return node;
 }
@@ -122,12 +131,32 @@ Node *primary() {
         return node;
         //ほかは数値のハズ
     }
-    Token *tok = consume_ident();  // identかどうかの判定
-    if (tok) {                     //真のとき
+    Token *tok = consume_tktype(TK_IDENT);  // identかどうかの判定
+    if (tok) {
+        //真のとき
         Node *node = calloc(1, sizeof(Node));
         node->kind = ND_LVAR;
-        node->offset = (tok->str[0] - 'a' + 1) * 8;
+        LVar *lvar = find_lvar(tok);  // tokに対応する変数名を検索
+        if (lvar) {                   //すでに存在するとき
+            node->offset = lvar->offset;
+        } else {
+            lvar = calloc(1, sizeof(LVar));
+            lvar->next = locals;
+            lvar->name = tok->str;
+            lvar->len = tok->len;
+            lvar->offset = locals->offset + 8;  //新しい変数のオフセット
+            node->offset = lvar->offset;
+            locals = lvar;
+        }
         return node;
     } else
         return new_node_num(expect_number());
+}
+
+LVar *find_lvar(Token *tok) {
+    for (LVar *var = locals; var; var = var->next) {
+        if (var->len == tok->len && !memcmp(tok->str, var->name, var->len))
+            return var;
+    }
+    return NULL;
 }

@@ -7,10 +7,23 @@
 
 typedef struct Token Token;  // 別名をつけることで,以降structが不要になる．
 typedef struct Node Node;  // structの省略
+typedef struct LVar LVar;
+
+//ローカル変数の型
+struct LVar {
+    LVar *next;  //次の変数かNULL
+    char *name;  //変数の名前
+    int len;     //名前の長さ
+    int offset;  // RBPからのオフセット
+};
+//ローカル変数
+extern LVar *locals;
+
 typedef enum {
     TK_RESERVED,  //記号
     TK_IDENT,     //識別子
     TK_NUM,       //整数トークン
+    TK_RETURN,    // returnトークン
     TK_EOF,       //入力の終わりを示すトークン
 } TokenKind;
 
@@ -35,6 +48,7 @@ typedef enum {
     ND_NUM,     //　整数
     ND_LVAR,    //ローカル変数
     ND_ASSIGN,  //　=
+    ND_RETURN,  // return
 } NodeKind;
 
 extern Node *code[100];
@@ -51,11 +65,6 @@ extern char *user_input;  //入力の先頭
 extern Token *token;      //今見ているトークン
 
 // parse.c
-Node *new_node(NodeKind kind, Node *lhs, Node *rhs);
-Node *new_node_num(int val);
-Node *primary();
-Node *mul();
-Node *expr();
 void program();
 
 // tokenize.c
@@ -66,8 +75,7 @@ void expect(char *op);
 int expect_number();
 bool at_eof();
 Token *tokenize(char *p);
-Token *consume_ident();
+Token *consume_tktype(TokenKind TK_KIND);
 
 // codegen.c
 void gen(Node *node);
-void gen_lval(Node *node);

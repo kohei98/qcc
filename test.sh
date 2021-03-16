@@ -15,6 +15,12 @@ assert (){
         exit 1
     fi
 }
+assert 14 'hoge = 3;foo = 5 * 6 - 8;return hoge + foo / 2;'
+assert 3 'return 3;return 34;return 6;'
+assert 14 'a = 4;b = 5 * 2;return a + b;'
+
+
+assert 14 'hoge = 3;foo = 5 * 6 - 8;hoge + foo / 2;'
 assert 3 'a = 3;'
 assert 14 'a = 3;b = 5 * 6 - 8;a + b / 2;'
 assert 42 '42;'

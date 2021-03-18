@@ -1,4 +1,4 @@
-#include "9cc.h"
+#include "qcc.h"
 
 LVar *localsinit() {
     LVar *var = calloc(1, sizeof(LVar));
@@ -31,7 +31,7 @@ int main(int argc, char **argv) {
     // // プロローグ　ローカル変数分の領域を確保する
     printf("    push rbp\n");
     printf("    mov rbp, rsp\n");
-    printf("    sub rsp, %d\n", var_size * 8);
+    printf("    sub rsp, %d\n", (var_size - 1) * 8);
 
     // 先頭の式から順にコードを生成
     for (int i = 0; code[i]; i++) {

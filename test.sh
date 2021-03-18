@@ -3,7 +3,7 @@ assert (){
     expected="$1"
     input="$2"
 
-    ./9cc "$input" > tmp.s
+    ./qcc "$input" > tmp.s
     cc -o tmp tmp.s
     ./tmp
     actual="$?"
@@ -15,6 +15,10 @@ assert (){
         exit 1
     fi
 }
+assert 23 'S = 20;
+           T = 2;
+           R = 1;
+           return S + T + R;'
 assert 14 'hoge = 3;foo = 5 * 6 - 8;return hoge + foo / 2;'
 assert 3 'return 3;return 34;return 6;'
 assert 14 'a = 4;b = 5 * 2;return a + b;'

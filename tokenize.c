@@ -1,4 +1,4 @@
-#include "9cc.h"
+#include "qcc.h"
 
 char *user_input;  //入力の先頭
 Token *token;

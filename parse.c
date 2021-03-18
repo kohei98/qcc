@@ -1,4 +1,4 @@
-#include "9cc.h"
+#include "qcc.h"
 Node *code[100];
 LVar *locals;
 

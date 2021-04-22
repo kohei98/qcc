@@ -36,8 +36,8 @@ int main(int argc, char **argv)
     printf("    push rbp\n");
     printf("    mov rbp, rsp\n");
     printf("    sub rsp, %d\n", (var_size - 1) * 8);
-
     // 先頭の式から順にコードを生成
+    label_no = 0;
     for (int i = 0; code[i]; i++)
     {
         gen(code[i]);

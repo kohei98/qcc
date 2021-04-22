@@ -15,6 +15,11 @@ assert (){
         exit 1
     fi
 }
+
+assert 3 'a = 3;b = 4;c = 20;
+if (a > b) return a * b + c;
+return a;'
+assert 20 'if (3 > 2) return 20;'
 assert 23 'S = 20;
            T = 2;
            R = 1;

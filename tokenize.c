@@ -142,6 +142,12 @@ Token *tokenize(char *p)
             continue;
         }
 
+        //ifかどうかを調べる
+        if (strncmp(p, "if", 2) == 0 && !is_alnum(p[2]))
+        {
+            cur = new_token(TK_IF, cur, p += 2, 2);
+            continue;
+        }
         // 識別子
         if (is_alpha(*p))
         {

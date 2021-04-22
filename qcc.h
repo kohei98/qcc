@@ -5,64 +5,77 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef struct Token Token;  // 別名をつけることで,以降structが不要になる．
-typedef struct Node Node;  // structの省略
+typedef struct Token Token; // 別名をつけることで,以降structが不要になる．
+typedef struct Node Node;   // structの省略
 typedef struct LVar LVar;
 
 //ローカル変数の型
-struct LVar {
-    LVar *next;  //次の変数かNULL
-    char *name;  //変数の名前
-    int len;     //名前の長さ
-    int offset;  // RBPからのオフセット
+struct LVar
+{
+    LVar *next; //次の変数かNULL
+    char *name; //変数の名前
+    int len;    //名前の長さ
+    int offset; // RBPからのオフセット
 };
-//ローカル変数
+//ローカル変数のリスト
 extern LVar *locals;
 
-typedef enum {
-    TK_RESERVED,  //記号
-    TK_IDENT,     //識別子
-    TK_NUM,       //整数トークン
-    TK_RETURN,    // returnトークン
-    TK_EOF,       //入力の終わりを示すトークン
+typedef enum
+{
+    TK_RESERVED, //記号
+    TK_IDENT,    //識別子
+    TK_NUM,      //整数トークン
+    TK_RETURN,   // returnトークン
+    TK_IF,       // ifトークン
+    TK_FOR,      //forトークン
+    TK_EOF,      //入力の終わりを示すトークン
 } TokenKind;
 
 //トークン型
-struct Token {
+struct Token
+{
     TokenKind kind;
-    Token *next;  //次のトークン
-    int val;      // kindがTK_NUMの場合，その数値
-    char *str;    //トークン文字列
-    int len;      //トークンの長さ
+    Token *next; //次のトークン
+    int val;     // kindがTK_NUMの場合，その数値
+    char *str;   //トークン文字列
+    int len;     //トークンの長さ
 };
 
-typedef enum {
-    ND_ADD,     // +
-    ND_SUB,     // -
-    ND_MUL,     // *
-    ND_DIV,     // /
-    ND_EQ,      // ==
-    ND_NE,      // !=
-    ND_LT,      // <
-    ND_LE,      // <=
-    ND_NUM,     //　整数
-    ND_LVAR,    //ローカル変数
-    ND_ASSIGN,  //　=
-    ND_RETURN,  // return
+typedef enum
+{
+    ND_ADD,    // +
+    ND_SUB,    // -
+    ND_MUL,    // *
+    ND_DIV,    // /
+    ND_EQ,     // ==
+    ND_NE,     // !=
+    ND_LT,     // <
+    ND_LE,     // <=
+    ND_NUM,    //　整数
+    ND_LVAR,   //ローカル変数
+    ND_ASSIGN, //　=
+    ND_RETURN, // return
+    ND_IF,     // if
+    ND_FOR,    // for
 } NodeKind;
 
 extern Node *code[100];
 
-struct Node {
-    NodeKind kind;  //ノードの型
-    Node *lhs;      //左辺
-    Node *rhs;      //右辺
-    int val;        // kindaが数値のとき
-    int offset;     // kindがND_LVARの場合のみ使う
+struct Node
+{
+    NodeKind kind; //ノードの型
+    Node *lhs;     //左辺
+    Node *rhs;     //右辺
+    int val;       // kindが数値のとき
+    int offset;    // kindがND_LVARの場合のみ使う
+
+    //if文のときに使う
+    Node *cond; //
+    Node *then; //
 };
 
-extern char *user_input;  //入力の先頭
-extern Token *token;      //今見ているトークン
+extern char *user_input; //入力の先頭
+extern Token *token;     //今見ているトークン
 
 // parse.c
 void program();
@@ -78,4 +91,6 @@ Token *tokenize(char *p);
 Token *consume_tktype(TokenKind TK_KIND);
 
 // codegen.c
+extern int label_no;
+
 void gen(Node *node);

@@ -15,7 +15,10 @@ assert (){
         exit 1
     fi
 }
-
+assert 1 'a = 1;if(4 > 2){if(a < 0){a = a * 5;} return a;}'
+assert 20 'a = 0;for(;a < 20;a = a + 2)b = 3;return a;'
+assert 10 'a = 0; while(a < 10) a = a + 1; return a;'
+assert 34 'if(2 >= 45) return 20; else return 34;'
 assert 3 'a = 3;b = 4;c = 20;
 if (a > b) return a * b + c;
 return a;'

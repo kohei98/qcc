@@ -1,5 +1,7 @@
 #include "qcc.h"
-int label_no = 0;
+int begin_no = 0;
+int end_no = 0;
+int else_no = 0;
 void gen_lval(Node *node)
 {
     if (node->kind != ND_LVAR)
@@ -12,6 +14,16 @@ void gen_lval(Node *node)
 }
 void gen(Node *node)
 {
+    if (node->kind == ND_BLOCK)
+    {
+        int i = 0;
+        while (node->next_blockstmt[i] != NULL)
+        {
+            gen(node->next_blockstmt[i]);
+            i++;
+        }
+        return;
+    }
     if (node->kind == ND_RETURN)
     {
         gen(node->lhs);
@@ -23,13 +35,73 @@ void gen(Node *node)
     }
     if (node->kind == ND_IF)
     {
+        if (node->els == NULL)
+        {
+            gen(node->cond);
+            printf("    pop rax\n");
+            printf("    cmp rax, 0\n");
+            printf("    je  .Lend%d\n", end_no);
+            gen(node->then);
+            printf(".Lend%d:\n", end_no);
+            end_no++;
+            return;
+        }
+        else
+        {
+            gen(node->cond);
+            printf("    pop rax\n");
+            printf("    cmp rax, 0\n");
+            printf("    je  .Lelse%d\n", else_no);
+            gen(node->then);
+            printf("    jmp .Lend%d\n", end_no);
+            printf(".Lelse%d:\n", else_no);
+            gen(node->els);
+            printf(".Lend%d:\n", end_no);
+            end_no++;
+            else_no++;
+            return;
+        }
+    }
+    if (node->kind == ND_WHILE)
+    {
+        printf(".Lbegin%d:\n", begin_no);
         gen(node->cond);
         printf("    pop rax\n");
         printf("    cmp rax, 0\n");
-        printf("    je  .LEND%d\n", label_no);
+        printf("    je .Lend%d\n", end_no);
         gen(node->then);
-        printf(".LEND%d:\n", label_no);
-        label_no++;
+        printf("    jmp .Lbegin%d\n", begin_no);
+        begin_no++;
+        printf(".Lend%d:\n", end_no);
+        end_no++;
+
+        return;
+    }
+    if (node->kind == ND_FOR)
+    {
+
+        if (node->init != NULL)
+        {
+            gen(node->init);
+        }
+        printf(".Lbegin%d:\n", begin_no);
+        if (node->cond != NULL)
+        {
+            gen(node->cond);
+        }
+        printf("    pop rax\n");
+        printf("    cmp rax, 0\n");
+        printf("    je .Lend%d\n", end_no);
+        gen(node->then);
+        if (node->step != NULL)
+        {
+            gen(node->step);
+        }
+        printf("    jmp .Lbegin%d\n", begin_no);
+        printf(".Lend%d:\n", end_no);
+        begin_no++;
+        end_no++;
+
         return;
     }
     switch (node->kind)

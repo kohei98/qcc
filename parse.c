@@ -35,7 +35,8 @@ void program()
     int i = 0;
     while (!at_eof())
         code[i++] = stmt(); //一つのstmtをcodeに順に格納していく
-    code[i] = NULL;         //末尾はNULL
+
+    code[i] = NULL; //末尾はNULL
 }
 
 Node *assign()
@@ -50,11 +51,27 @@ Node *assign()
 Node *expr() { return assign(); }
 
 // stmt = expr ";"
+//      | "{" stmt* "}"
 //      | "return" expr ";"
-//      | "if" "(" expr ")" stmt
+//      | "if" "(" expr ")" stmt ("else" stmt)?
+//      | "while" "(" expr ")" stmt
+//      | "for" "(" expr? ";" expr? ";" expr?";")stmt
 Node *stmt()
 {
     Node *node;
+    if (prev("{"))
+    {
+        node = calloc(1, sizeof(Node));
+        node->kind = ND_BLOCK;
+        int i = 0;
+        while (!prev("}"))
+        {
+            node->next_blockstmt[i] = stmt();
+            i++;
+        }
+        node->next_blockstmt[i] = NULL;
+        return node;
+    }
     if (consume_tktype(TK_RETURN))
     {
         node = calloc(1, sizeof(Node));
@@ -62,12 +79,54 @@ Node *stmt()
         node->lhs = expr();
         expect(";");
     }
+    //if
     else if (consume_tktype(TK_IF))
     {
         node = calloc(1, sizeof(Node));
         node->kind = ND_IF;
         consume("(");
         node->cond = expr();
+        consume(")");
+        node->then = stmt();
+        //else
+        if (prev_tktype(TK_ELSE))
+        {
+            // consume("else");
+            node->els = stmt();
+        }
+        return node;
+    }
+    // while
+    else if (consume_tktype(TK_WHILE))
+    {
+        node = calloc(1, sizeof(Node));
+        node->kind = ND_WHILE;
+        consume("(");
+        node->cond = expr();
+        consume(")");
+        node->then = stmt();
+        return node;
+    }
+
+    else if (consume_tktype(TK_FOR))
+    {
+        node = calloc(1, sizeof(Node));
+        node->kind = ND_FOR;
+        consume("(");
+        if (!prev(";"))
+        {
+            node->init = expr();
+            consume(";");
+        }
+        if (!prev(";"))
+        {
+            node->cond = expr();
+            consume(";");
+        }
+        if (!prev(";"))
+        {
+            node->step = expr();
+        }
         consume(")");
         node->then = stmt();
         return node;

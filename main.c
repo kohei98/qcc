@@ -22,8 +22,10 @@ int main(int argc, char **argv)
     locals = localsinit(); //変数のリストを初期化
     user_input = argv[1];
     token = tokenize(argv[1]);
+
     program();
     int var_size = 0;
+
     for (LVar *var = locals; var; var = var->next)
     {
         var_size++;
@@ -37,7 +39,9 @@ int main(int argc, char **argv)
     printf("    mov rbp, rsp\n");
     printf("    sub rsp, %d\n", (var_size - 1) * 8);
     // 先頭の式から順にコードを生成
-    label_no = 0;
+    begin_no = 0;
+    end_no = 0;
+    else_no = 0;
     for (int i = 0; code[i]; i++)
     {
         gen(code[i]);

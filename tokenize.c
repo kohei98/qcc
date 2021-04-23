@@ -58,6 +58,17 @@ void expect(char *op)
         error_at(token->str, "'%s'ではありません", op);
     token = token->next;
 }
+
+// 次のトークンが期待している記号のときはトークンを一つ読み進めて
+//それ以外はfalseを返して何もしない
+bool prev(char *op)
+{
+    if (token->kind != TK_RESERVED || strlen(op) != token->len ||
+        memcmp(token->str, op, token->len))
+        return false;
+    token = token->next;
+    return true;
+}
 Token *consume_ident()
 {
     if (token->kind != TK_IDENT)
@@ -71,6 +82,17 @@ Token *consume_tktype(TokenKind TK_KIND)
 {
     if (token->kind != TK_KIND)
         return NULL;
+    Token *t = token;
+    token = token->next;
+    return t;
+}
+
+Token *prev_tktype(TokenKind TK_KIND)
+{
+    if (token->kind != TK_KIND)
+    {
+        return NULL;
+    }
     Token *t = token;
     token = token->next;
     return t;
@@ -129,7 +151,7 @@ Token *tokenize(char *p)
             continue;
         }
 
-        if (strchr(";+-*/()<>=", *p))
+        if (strchr(";+-*/()<>={}", *p))
         {
             cur = new_token(TK_RESERVED, cur, p++, 1);
             continue;
@@ -146,6 +168,24 @@ Token *tokenize(char *p)
         if (strncmp(p, "if", 2) == 0 && !is_alnum(p[2]))
         {
             cur = new_token(TK_IF, cur, p += 2, 2);
+            continue;
+        }
+
+        if (strncmp(p, "else", 4) == 0 && !is_alnum(p[4]))
+        {
+            cur = new_token(TK_ELSE, cur, p += 4, 4);
+            continue;
+        }
+
+        if (strncmp(p, "while", 5) == 0 && !is_alnum(p[5]))
+        {
+            cur = new_token(TK_WHILE, cur, p += 5, 5);
+            continue;
+        }
+
+        if (strncmp(p, "for", 3) == 0 && !is_alnum(p[3]))
+        {
+            cur = new_token(TK_FOR, cur, p += 3, 3);
             continue;
         }
         // 識別子

@@ -19,38 +19,22 @@ int main(int argc, char **argv)
     }
     // トークナイズしてパースする．
     // LVar *locals;  //ローカル変数を格納する連結リスト
-    locals = localsinit(); //変数のリストを初期化
+    // locals[0] = localsinit(); //変数のリストを初期化
     user_input = argv[1];
     token = tokenize(argv[1]);
 
     program();
-    int var_size = 0;
-
-    for (LVar *var = locals; var; var = var->next)
-    {
-        var_size++;
-    }
-
+    // printf("---------\n");
     printf(".intel_syntax noprefix\n");
     printf(".globl main\n");
-    printf("main:\n");
+
     // // プロローグ　ローカル変数分の領域を確保する
-    printf("    push rbp\n");
-    printf("    mov rbp, rsp\n");
-    printf("    sub rsp, %d\n", (var_size - 1) * 8);
+
     // 先頭の式から順にコードを生成
-    begin_no = 0;
-    end_no = 0;
-    else_no = 0;
     for (int i = 0; code[i]; i++)
     {
-        gen(code[i]);
-        printf("    pop rax\n");
+        func_no = i;
+        gen(code[func_no]);
     }
-
-    // エピローグ
-    printf("    mov rsp, rbp\n");
-    printf("    pop rbp\n");
-    printf("    ret\n");
     return 0;
 }

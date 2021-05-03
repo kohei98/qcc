@@ -1,7 +1,8 @@
 #include "qcc.h"
 Node *code[100];
-LVar *locals;
-
+LVar *locals[100];
+int func_no = 0;
+Node *func();
 Node *stmt();
 Node *assign();
 Node *primary();
@@ -29,14 +30,70 @@ Node *new_node_num(int val)
     return node;
 }
 
-// program = stmt*
+// program = func*
 void program()
 {
-    int i = 0;
+    // int i = 0;
     while (!at_eof())
-        code[i++] = stmt(); //一つのstmtをcodeに順に格納していく
+    {
+        locals[func_no] = localsinit();
+        code[func_no] = func(); //一つのfuncをcodeに順に格納していく
+        func_no++;
+    }
+    code[func_no] = NULL; //末尾はNULL
+    locals[func_no] = NULL;
+}
+//関数定義 引数の処理が終わったらstmt()を呼ぶ
+// func = "("ident*")" stmt*
+Node *func()
+{
+    Node *node = calloc(1, sizeof(Node));
+    Token *tok = consume_tktype(TK_IDENT); // identかどうかの判定
+    if (tok)
+    {
 
-    code[i] = NULL; //末尾はNULL
+        Node *node = calloc(1, sizeof(Node));
+        node->arg_number = 0;
+        if (preview("("))
+        {
+            node->func_name = calloc(tok->len, sizeof(char));
+            memcpy(node->func_name, tok->str, tok->len);
+
+            node->kind = ND_DEF_FUNC;
+
+            while (!preview(")"))
+            {
+                Token *tok = consume_tktype(TK_IDENT); // identかどうかの判定
+                if (tok)
+                {
+                    node->arg_number++;
+                    // node->kind = ND_LVAR;
+                    LVar *lvar = find_lvar(tok); // tokに対応する変数名を検索
+                    if (lvar)
+                    { //すでに存在するとき
+                        node->offset = lvar->offset;
+                    }
+                    else
+                    {
+                        lvar = calloc(1, sizeof(LVar));
+                        lvar->next = locals[func_no];
+                        lvar->name = tok->str;
+                        lvar->len = tok->len;
+                        lvar->offset = locals[func_no]->offset + 8; //新しい変数のオフセット
+                        node->offset = lvar->offset;
+                        locals[func_no] = lvar;
+                    }
+                    preview(",");
+                }
+            }
+        }
+        // expect("{");
+        // while (!preview("}"))
+        node->then = stmt();
+        // expect("}");
+        return node;
+    }
+    return NULL;
 }
 
 Node *assign()
@@ -50,7 +107,7 @@ Node *assign()
 // expr = assign
 Node *expr() { return assign(); }
 
-// stmt = expr ";"
+// stmt = expr? ";"
 //      | "{" stmt* "}"
 //      | "return" expr ";"
 //      | "if" "(" expr ")" stmt ("else" stmt)?
@@ -59,12 +116,12 @@ Node *expr() { return assign(); }
 Node *stmt()
 {
     Node *node;
-    if (prev("{"))
+    if (preview("{"))
     {
         node = calloc(1, sizeof(Node));
         node->kind = ND_BLOCK;
         int i = 0;
-        while (!prev("}"))
+        while (!preview("}"))
         {
             node->next_blockstmt[i] = stmt();
             i++;
@@ -113,28 +170,37 @@ Node *stmt()
         node = calloc(1, sizeof(Node));
         node->kind = ND_FOR;
         consume("(");
-        if (!prev(";"))
+        if (!preview(";"))
         {
             node->init = expr();
             consume(";");
         }
-        if (!prev(";"))
+        if (!preview(";"))
         {
             node->cond = expr();
             consume(";");
         }
-        if (!prev(";"))
+        if (!preview(")"))
         {
             node->step = expr();
+            consume(")");
         }
-        consume(")");
         node->then = stmt();
         return node;
     }
     else
     {
-        node = expr();
-        expect(";");
+        if (!preview(";"))
+        {
+            node = expr();
+            consume(";");
+            return node;
+        }
+        else
+        {
+            node = calloc(1, sizeof(Node));
+            node->kind = ND_BLOCK;
+        }
     }
     return node;
 }
@@ -214,7 +280,9 @@ Node *unary()
     return primary();
 }
 
-// primary =num | ident | "(" expr ")"
+// primary =num
+//          | ident ("("")")?
+//          | "(" expr ")"
 Node *primary()
 {
     // '('が来たら"(" expr() ")"のハズ
@@ -228,9 +296,28 @@ Node *primary()
     Token *tok = consume_tktype(TK_IDENT); // identかどうかの判定
     if (tok)
     {
-        //真のとき
         Node *node = calloc(1, sizeof(Node));
-        node->kind = ND_LVAR;
+        //変数or関数
+        if (preview("("))
+        {
+            node->func_name = calloc(tok->len, sizeof(char));
+            memcpy(node->func_name, tok->str, tok->len);
+            node->kind = ND_CALL_FUNC;
+
+            int i = 0;
+            while (!preview(")"))
+            {
+                node->argument[i] = add();
+                preview(",");
+                i++;
+            }
+            node->argument[i] = NULL;
+            // return node;
+        }
+        else
+        {
+            node->kind = ND_LVAR;
+        }
         LVar *lvar = find_lvar(tok); // tokに対応する変数名を検索
         if (lvar)
         { //すでに存在するとき
@@ -239,13 +326,14 @@ Node *primary()
         else
         {
             lvar = calloc(1, sizeof(LVar));
-            lvar->next = locals;
+            lvar->next = locals[func_no];
             lvar->name = tok->str;
             lvar->len = tok->len;
-            lvar->offset = locals->offset + 8; //新しい変数のオフセット
+            lvar->offset = locals[func_no]->offset + 8; //新しい変数のオフセット
             node->offset = lvar->offset;
-            locals = lvar;
+            locals[func_no] = lvar;
         }
+
         return node;
     }
     else
@@ -254,7 +342,7 @@ Node *primary()
 
 LVar *find_lvar(Token *tok)
 {
-    for (LVar *var = locals; var; var = var->next)
+    for (LVar *var = locals[func_no]; var; var = var->next)
     {
         if (var->len == tok->len && !memcmp(tok->str, var->name, var->len))
             return var;

@@ -8,7 +8,7 @@
 typedef struct Token Token; // 別名をつけることで,以降structが不要になる．
 typedef struct Node Node;   // structの省略
 typedef struct LVar LVar;
-
+extern const char arg_regi[7][4];
 //ローカル変数の型
 struct LVar
 {
@@ -18,7 +18,7 @@ struct LVar
     int offset; // RBPからのオフセット
 };
 //ローカル変数のリスト
-extern LVar *locals;
+extern LVar *locals[100];
 
 typedef enum
 {
@@ -62,6 +62,8 @@ typedef enum
     ND_WHILE,  // while
     ND_FOR,    // for
     ND_BLOCK,
+    ND_CALL_FUNC, //関数呼び出し
+    ND_DEF_FUNC,  //関数定義
 } NodeKind;
 
 extern Node *code[100];
@@ -80,13 +82,18 @@ struct Node
     Node *els;
     Node *init;                // for文の初期値
     Node *step;                // forのstep
-    Node *next_blockstmt[100]; //ND_BLOCKのときに使うstmtのベクタ 実装をサボったので，そのうちポインタを使って動的に確保できたらよい
+    Node *next_blockstmt[100]; //ND_BLOCKのときに使うstmtのベクタ(Nodeのポインタの配列) 実装をサボったので，そのうちポインタを使って動的に確保できたらよい
+
+    Node *argument[7];
+    char *func_name; //ND_CALL_FANC のときの関数名
+    int arg_number;  //ND_DEF_FANCのときの引数の数
 };
 
 extern char *user_input; //入力の先頭
 extern Token *token;     //今見ているトークン
 
 // parse.c
+extern int func_no;
 void program();
 
 // tokenize.c
@@ -94,7 +101,7 @@ void error_at(char *loc, char *fmt, ...);
 void error(char *fmt, ...);
 bool consume(char *op);
 void expect(char *op);
-bool prev(char *op);
+bool preview(char *op);
 int expect_number();
 bool at_eof();
 Token *tokenize(char *p);
@@ -102,8 +109,7 @@ Token *consume_tktype(TokenKind TK_KIND);
 Token *prev_tktype(TokenKind TK_KIND);
 
 // codegen.c
-extern int begin_no;
-extern int end_no;
-extern int else_no;
-
 void gen(Node *node);
+
+//main.c
+LVar *localsinit();
